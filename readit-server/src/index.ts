@@ -43,23 +43,23 @@ const main = async() => {
     const app = express();
 
     const RedisStore = connectRedis(session);
-    const redisClient = redis.createClient({ legacyMode: true });
+    const redisClient = redis.createClient();
     redisClient.connect().catch(console.error);
 
     app.use(
         session({
             name: 'qid',
             store: new RedisStore({ 
-                client: redisClient,
+                client: redisClient as any,
                 disableTouch: true,
             }),
             cookie: {
                 maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // 10 years
                 httpOnly: true,
                 sameSite: "lax", // related to protecting the csrf
-                secure: __prod__ // cookie only works in https
+                secure: false //__prod__ // cookie only works in https
             },
-            saveUninitialized: false,
+            saveUninitialized: false, 
             secret: "keyboard cat", 
             resave: false,
         })
