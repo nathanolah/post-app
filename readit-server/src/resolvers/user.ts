@@ -33,17 +33,20 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
-   @Query(() => User, {nullable: true})
-   async me(
-       @Ctx() { req, em }: MyContext
-   ) {
-       if (!req.session.userId) {
-           return null;
-       }
+
+//    @Query(() => User, {nullable: true})
+//    async me(
+//        @Ctx() { req, em }: MyContext
+//    ) {
+//        if (!req.session.userId) {
+//            return null;
+//        }
         
-       const user = await em.findOne(User, {id: req.session.userId});
-       return user;
-   } 
+//        const user = await em.findOne(User, {id: req.session.userId});
+//        //const user = await em.findOne(User, {id: req.cookies.jid});
+
+//        return user;
+//    } 
 
    @Mutation(() => UserResponse)
    async register(
@@ -99,9 +102,10 @@ export class UserResolver {
    @Mutation(() => UserResponse)
    async login(
        @Arg('options') options: UsernamePasswordInput,
-       @Ctx() { em, req }: MyContext 
+       @Ctx() { em, req, res }: MyContext 
    ): Promise<UserResponse> {
        const user = await em.findOne(User, { username: options.username });
+       
        if (!user) {
            return {
                errors: [{
@@ -121,7 +125,18 @@ export class UserResolver {
            };
        }
 
-       req.session.userId = user.id;
+       //req.session.userId = user.id;
+       //console.log(req.session.userId + " " + user.id + " " + user.username)
+
+    //    res.cookie('jid', user.id, {
+    //        httpOnly: true
+    //    })
+
+       console.log(req.headers)
+       console.log(req.session)
+       console.log(req.sessionID)
+       //console.log(req.sessionData)
+
 
        return {
            user,

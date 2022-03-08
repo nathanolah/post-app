@@ -13,6 +13,8 @@ import { UserResolver } from "./resolvers/user";
 import * as redis from 'redis';
 import session from 'express-session';
 import connectRedis from 'connect-redis';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
  
 //import { Post } from './entities/Post';
 import path from 'path'
@@ -41,10 +43,20 @@ const main = async() => {
 
     // Express server
     const app = express();
+    
+    //app.use(cookieParser());
+
+    app.use(
+        cors({
+            origin: "https://studio.apollographql.com",
+            credentials: true
+        })
+    );
 
     const RedisStore = connectRedis(session);
-    const redisClient = redis.createClient();
+    const redisClient = redis.createClient({ legacyMode: true });
     redisClient.connect().catch(console.error);
+
 
     app.use(
         session({
@@ -57,7 +69,7 @@ const main = async() => {
                 maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // 10 years
                 httpOnly: true,
                 sameSite: "lax", // related to protecting the csrf
-                secure: false //__prod__ // cookie only works in https
+                secure: false // __prod__ // cookie only works in https
             },
             saveUninitialized: false, 
             secret: "keyboard cat", 
@@ -73,13 +85,13 @@ const main = async() => {
             resolvers: [HelloResolver, PostResolver, UserResolver],
             validate: false
         }),
-        context: ({ req, res }): MyContext => ({ em: orm.em, req, res})
+        context: ({ req, res }): MyContext => ({ em: orm.em, req, res })
     });
 
     await apolloServer.start();
 
     // Add graphql data to the Express server
-    apolloServer.applyMiddleware({ app });
+    apolloServer.applyMiddleware({ app, cors: false });
 
     app.listen(4000, () => {
         console.log('server is running on port localhost:4000');
