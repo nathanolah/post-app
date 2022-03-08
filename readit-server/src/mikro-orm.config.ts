@@ -7,7 +7,6 @@ import path from 'path';
 export default {
     migrations: {
         path: path.join(__dirname ,'./migrations'),
-        //pathTs: '/home/oem/Documents/readit-server/src/migrations',
         pathTs: path.join(__dirname, './migrations'),
         glob: '!(*.d).{js,ts}' // how to match migration files (all .js and .ts files, but not .d.ts)
     },

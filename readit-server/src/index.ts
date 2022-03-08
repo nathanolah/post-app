@@ -7,24 +7,24 @@ import express from 'express';
 import { ApolloServer } from 'apollo-server-express';
 import { buildSchema } from 'type-graphql';
 import { HelloResolver } from './resolvers/hello';
-import { PostResolver } from './resolvers/post';
+import { PostResolver } from './resolvers/post'; 
 import { UserResolver } from "./resolvers/user";
 
 import * as redis from 'redis';
 import session from 'express-session';
 import connectRedis from 'connect-redis';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
- 
+//import cors from 'cors';
+
 //import { Post } from './entities/Post';
-import path from 'path'
-import { MyContext } from "./types";
+//import path from 'path'
+
+import { ApolloServerPluginLandingPageGraphQLPlayground } from "apollo-server-core";
 
 // install typeorm
 // connect typeorm to db, then setup resovlers, perform crud operations
 
 const main = async() => {
-    console.log(path.join(__dirname ,'./migrations'));
+    //console.log(path.join(__dirname ,'./migrations'));
 
     const orm = await MikroORM.init(config); 
     await orm.getMigrator().up();
@@ -39,19 +39,15 @@ const main = async() => {
     //const posts = await orm.em.find(Post, {});
     //const posts = await em.find(Post, {});
     
-    //console.log(posts);
-
     // Express server
     const app = express();
-    
-    //app.use(cookieParser());
 
-    app.use(
-        cors({
-            origin: "https://studio.apollographql.com",
-            credentials: true
-        })
-    );
+    // app.use(
+    //     cors({
+    //         origin: "http://localhost:4000/graphql",
+    //         credentials: true
+    //     })
+    // );
 
     const RedisStore = connectRedis(session);
     const redisClient = redis.createClient({ legacyMode: true });
@@ -85,13 +81,16 @@ const main = async() => {
             resolvers: [HelloResolver, PostResolver, UserResolver],
             validate: false
         }),
-        context: ({ req, res }): MyContext => ({ em: orm.em, req, res })
+        context: ({ req, res }) => ({ em: orm.em, req, res }),
+        plugins: [
+            ApolloServerPluginLandingPageGraphQLPlayground()
+        ]
     });
 
     await apolloServer.start();
 
     // Add graphql data to the Express server
-    apolloServer.applyMiddleware({ app, cors: false });
+    apolloServer.applyMiddleware({ app });
 
     app.listen(4000, () => {
         console.log('server is running on port localhost:4000');

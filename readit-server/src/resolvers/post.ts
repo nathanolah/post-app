@@ -1,8 +1,6 @@
 import { Post } from "../entities/Post";
 import { Arg, Ctx, Int, Mutation, Query, Resolver } from "type-graphql";
 import { MyContext } from "src/types";
-// import { EntityManager } from '@mikro-orm/postgresql';
-
 
 @Resolver()
 export class PostResolver {
