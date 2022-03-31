@@ -1,8 +1,6 @@
-import "reflect-metadata"; // required for type-graphql
-import { MikroORM } from '@mikro-orm/core';
-import { __prod__ } from './constants';
-import config from './mikro-orm.config';
-//import { EntityManager } from '@mikro-orm/postgresql';
+import "reflect-metadata"; // required for type-graphql and typeorm
+import "dotenv-safe/config";
+import { COOKIE_NAME, __prod__ } from './constants';
 import express from 'express';
 import { ApolloServer } from 'apollo-server-express';
 import { buildSchema } from 'type-graphql';
@@ -10,65 +8,81 @@ import { HelloResolver } from './resolvers/hello';
 import { PostResolver } from './resolvers/post'; 
 import { UserResolver } from "./resolvers/user";
 
-import * as redis from 'redis';
-import session from 'express-session';
+//import { MikroORM } from '@mikro-orm/core';
+//import config from './mikro-orm.config';
+//import * as redis from 'redis';
+
+import path from 'path'
+import Redis from 'ioredis';
+import session from 'express-session'; 
 import connectRedis from 'connect-redis';
-//import cors from 'cors';
-
-//import { Post } from './entities/Post';
-//import path from 'path'
-
+import cors from 'cors';
+import { createConnection } from 'typeorm';
 import { ApolloServerPluginLandingPageGraphQLPlayground } from "apollo-server-core";
-
-// install typeorm
-// connect typeorm to db, then setup resovlers, perform crud operations
+import { Post } from "./entities/Post";
+import { User } from "./entities/User";
+import { Upvote } from "./entities/Upvote";
+import { createUserLoader } from "./utils/createUserLoader";
+import { createUpvoteLoader } from "./utils/createUpvoteLoader";
 
 const main = async() => {
-    //console.log(path.join(__dirname ,'./migrations'));
 
-    const orm = await MikroORM.init(config); 
-    await orm.getMigrator().up();
-    //const em = orm.em as EntityManager;
-    
-    // create the instance of Post 
-    //const post = orm.em.create(Post, {title: 'my first post', createdAt: new Date(), updatedAt: new Date() });
-    
-    // Insert into the db
-    //await orm.em.persistAndFlush(post);
-    
-    //const posts = await orm.em.find(Post, {});
-    //const posts = await em.find(Post, {});
-    
+    const conn = await createConnection({
+        type: 'postgres',
+        url: process.env.DATABASE_URL,
+        logging: true,
+        //synchronize: true,
+        migrations: [path.join(__dirname, './migrations/*')],
+        entities: [Post, User, Upvote]
+    }); 
+
+    await conn.runMigrations(); 
+
+    //await Post.delete({});
+
+    /** MikroORM configuration **
+    ////console.log(path.join(__dirname ,'./migrations'));
+    //const orm = await MikroORM.init(config); 
+    ////await orm.em.nativeDelete(User, {}) // AFTER MIGRATING THE EMAIL TO THE SCHEMA THE OLD USERS NEED TO BE DELETED
+    //await orm.getMigrator().up();
+    */
+
     // Express server
     const app = express();
 
-    // app.use(
-    //     cors({
-    //         origin: "http://localhost:4000/graphql",
-    //         credentials: true
-    //     })
-    // );
+    app.use(
+        cors({
+            origin: process.env.CORS_ORIGIN,
+            credentials: true
+        })
+    );
 
     const RedisStore = connectRedis(session);
-    const redisClient = redis.createClient({ legacyMode: true });
-    redisClient.connect().catch(console.error);
+    // const redisClient = redis.createClient({ legacyMode: true });
+    // redisClient.connect().catch(console.error);
+    const redis = new Redis(process.env.REDIS_URL);
 
+    // This will allow the cookies to work in a proxy environment
+    // nginx will be sitting in front of the api.
+    app.set('trust proxy', 1); // tells express we have 1 proxy.
 
     app.use(
         session({
-            name: 'qid',
+            name: COOKIE_NAME,
             store: new RedisStore({ 
-                client: redisClient as any,
+                client: redis,
+                //client: redisClient as any,
                 disableTouch: true,
             }),
             cookie: {
                 maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // 10 years
                 httpOnly: true,
                 sameSite: "lax", // related to protecting the csrf
-                secure: false // __prod__ // cookie only works in https
+                secure: __prod__, // __prod__ // cookie only works in https
+                domain: __prod__ ? ".nolah.xyz" : undefined
             },
             saveUninitialized: false, 
-            secret: "keyboard cat", 
+            secret: process.env.SESSION_SECRET, 
             resave: false,
         })
     );
@@ -81,7 +95,13 @@ const main = async() => {
             resolvers: [HelloResolver, PostResolver, UserResolver],
             validate: false
         }),
-        context: ({ req, res }) => ({ em: orm.em, req, res }),
+        context: ({ req, res }) => ({ 
+            req,
+            res,
+            redis,
+            userLoader: createUserLoader(), // a new userLoader will be created on every request (batches and caches)
+            upvoteLoader: createUpvoteLoader(),
+        }),
         plugins: [
             ApolloServerPluginLandingPageGraphQLPlayground()
         ]
@@ -90,9 +110,12 @@ const main = async() => {
     await apolloServer.start();
 
     // Add graphql data to the Express server
-    apolloServer.applyMiddleware({ app });
+    apolloServer.applyMiddleware({
+        app,
+        cors: false
+    });
 
-    app.listen(4000, () => {
+    app.listen(parseInt(process.env.PORT), () => {
         console.log('server is running on port localhost:4000');
     })
 
