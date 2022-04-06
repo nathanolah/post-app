@@ -14,27 +14,32 @@
 // import { DarkModeSwitch } from '../components/DarkModeSwitch'
 // import { CTA } from '../components/CTA'
 // import { Footer } from '../components/Footer'
-import { Box, Button, Flex, Heading, Link, Stack, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Link, Stack, Text, Spinner } from '@chakra-ui/react';
 import { withUrqlClient } from 'next-urql';
 import { Layout } from '../components/Layout';
-import { usePostsQuery } from '../generated/graphql';
+import { Post, PostsQuery, usePostsQuery } from '../generated/graphql';
 import { createUrqlClient } from '../utils/createUrqlClient';
 import NextLink from 'next/link';
 import { useState } from 'react';
 import { UpvoteSection } from '../components/UpvoteSection';
 import { EditDeletePostButtons } from '../components/EditDeletePostButtons';
+import { withApollo } from '../utils/withApollo';
 
 const Index = () => {
-  const [variables, setVariables] = useState({ 
-    limit: 15, 
-    cursor: null as null | string
+  // const [variables, setVariables] = useState({ 
+  //   limit: 15, 
+  //   cursor: null as null | string
+  // });
+
+  const { data, error, loading, fetchMore, variables } = usePostsQuery({
+    variables: {
+      limit: 15, 
+      cursor: null,
+    },
+    notifyOnNetworkStatusChange: true,
   });
 
-  const [{ data, error, fetching }] = usePostsQuery({
-    variables,
-  });
-
-  if (!fetching && !data) {
+  if (!loading && !data) {
     return (
       <div>
         Failed to load any data.
@@ -45,8 +50,10 @@ const Index = () => {
 
   return (
     <Layout>
-      {!data && fetching ? (
-        <div>loading...</div>
+      {!data && loading ? (
+        <Flex align="center">
+          <Spinner m={'auto'} my={8} size='xl' />
+        </Flex>
        ) : ( 
         <Stack spacing={8}>
           {data!.posts.posts.map((p) => 
@@ -79,12 +86,37 @@ const Index = () => {
         <Flex>
           <Button 
             onClick={() => {
-              setVariables({
-                limit: variables.limit,
-                cursor: data.posts.posts[data.posts.posts.length - 1].createdAt,
-              })
+              fetchMore({
+                variables: {
+                  limit: variables?.limit,
+                  cursor: data.posts.posts[data.posts.posts.length - 1].createdAt,
+                },
+                // updateQuery: (previousValue, { fetchMoreResult }): PostsQuery => {
+                //   if (!fetchMoreResult) {
+                //     return previousValue as PostsQuery;
+                //   }
+
+                //   return {
+                //     __typename: "Query",
+                //     posts: {
+                //       __typename: "PaginatedPosts",
+                //       hasMore: (fetchMoreResult as PostsQuery).posts.hasMore,
+                //       posts: [
+                //         ...(previousValue as PostsQuery).posts.posts,
+                //         ...(fetchMoreResult as PostsQuery).posts.posts,
+                //       ],
+                //     },
+                //   };
+
+                // },
+
+              });
+              // setVariables({
+              //   limit: variables.limit,
+              //   cursor: data.posts.posts[data.posts.posts.length - 1].createdAt,
+              // })
             }} 
-            isLoading={fetching}
+            isLoading={loading}
             m='auto' 
             my={8}
           >
@@ -134,4 +166,4 @@ const Index = () => {
 
 }
 
-export default withUrqlClient(createUrqlClient, { ssr: true })(Index); // this wraps the urql provider around Index to use graphql. We also use SSR for the query.
+export default withApollo({ ssr: true })(Index); // this wraps the urql provider around Index to use graphql. We also use SSR for the query.

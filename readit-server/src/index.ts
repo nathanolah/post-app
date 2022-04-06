@@ -36,7 +36,7 @@ const main = async() => {
         entities: [Post, User, Upvote]
     }); 
 
-    await conn.runMigrations(); 
+    //await conn.runMigrations(); 
 
     //await Post.delete({});
 

@@ -1,4 +1,4 @@
-import { Box, Heading } from '@chakra-ui/react';
+import { Box, Flex, Heading, Spinner } from '@chakra-ui/react';
 import { withUrqlClient } from 'next-urql';
 import { useRouter } from 'next/router';
 import React from 'react'; 
@@ -6,21 +6,27 @@ import { EditDeletePostButtons } from '../../components/EditDeletePostButtons';
 import { Layout } from '../../components/Layout';
 import { usePostQuery } from '../../generated/graphql';
 import { createUrqlClient } from '../../utils/createUrqlClient';
+import { useGetPostFromUrl } from '../../utils/useGetPostFromUrl';
+import { withApollo } from '../../utils/withApollo';
 
 const Post = ({}) => {
-    const router = useRouter();
-    const intId = typeof router.query.id === 'string' ? parseInt(router.query.id) : -1;
-    const [{data, error, fetching}] = usePostQuery({
-        pause: intId === -1, // this will pause the query if 'intId' is -1
-        variables: {
-            id: intId
-        }
-    });
+    // const router = useRouter();
+    // const intId = typeof router.query.id === 'string' ? parseInt(router.query.id) : -1;
+    // const [{data, error, fetching}] = usePostQuery({
+    //     pause: intId === -1, // this will pause the query if 'intId' is -1
+    //     variables: {
+    //         id: intId
+    //     }
+    // });
 
-    if (fetching) {
+    const { data, error, loading } = useGetPostFromUrl();
+
+    if (loading) {
         return (
             <Layout>
-                <div>Loading...</div>
+                <Flex align="center">
+                    <Spinner m={'auto'} my={8} size='xl' />
+                </Flex>
             </Layout>
         );
     }
@@ -50,4 +56,4 @@ const Post = ({}) => {
 
 }
 
-export default withUrqlClient(createUrqlClient, { ssr: true })(Post);
+export default withApollo({ ssr: true })(Post);

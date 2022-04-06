@@ -3,22 +3,34 @@ import { Formik, Form } from 'formik';
 import { Box, Button } from "@chakra-ui/react";
 import { Wrapper } from "../components/Wrapper";
 import { InputField } from "../components/InputField";
-import { useRegisterMutation } from "../generated/graphql";
+import { MeDocument, MeQuery, useRegisterMutation } from "../generated/graphql";
 import { toErrorMap } from "../utils/toErrorMap";
 import { useRouter } from "next/router";
 import { withUrqlClient } from "next-urql";
 import { createUrqlClient } from "../utils/createUrqlClient";
+import { withApollo } from "../utils/withApollo";
 
 const Register = () => {
     const router = useRouter();
-    const [_, register] = useRegisterMutation();
+    const [register] = useRegisterMutation();
 
     return (
         <Wrapper variant='small'>
             <Formik
                 initialValues={{ email: "", username: "", password: ""}}
                 onSubmit={async (values, { setErrors }) => {
-                    const response = await register({ options: values });
+                    const response = await register({ 
+                        variables: { options: values },
+                        update: (cache, { data }) => { // getting the data which is the result of the register and we are putting it into the cache of the MeQuery.
+                            cache.writeQuery<MeQuery>({
+                                query: MeDocument,
+                                data: { // use "Ctrl + Space" to get the autocompletion to fill the shape of the data.
+                                    __typename: "Query",
+                                    me: data?.register.user
+                                }
+                            });
+                        }
+                    });
 
                     if (response.data?.register.errors) {
                         setErrors(toErrorMap(response.data.register.errors));
@@ -67,4 +79,4 @@ const Register = () => {
 }
 
 // in next.js we have to export default
-export default withUrqlClient(createUrqlClient)(Register);
+export default withApollo({ ssr: false })(Register);

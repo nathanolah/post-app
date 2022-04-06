@@ -12,6 +12,8 @@ import { Field, Int, ObjectType } from "type-graphql";
 import { User } from './User';
 import { Upvote } from './Upvote';
 
+//import { Comment } from './Comment'
+
 @ObjectType() // This class is an object type of graphql
 @Entity() // Entity decorator corresponds to a database table
 export class Post extends BaseEntity { // BaseEntity allows use to run commands related to SQL
@@ -51,5 +53,10 @@ export class Post extends BaseEntity { // BaseEntity allows use to run commands 
 
     @Field(() => String)
     @UpdateDateColumn()
-    updatedAt: Date; 
+    updatedAt: Date;
+
+
+
+    // @OneToMany(() => Comment, comment => comment.creator)
+    // comments: Comment[];
 }

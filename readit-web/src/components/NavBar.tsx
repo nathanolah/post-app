@@ -4,17 +4,20 @@ import NextLink from 'next/link';
 import { useLogoutMutation, useMeQuery } from '../generated/graphql';
 import { isServer } from '../utils/isServer';
 import { useRouter } from 'next/router';
+import { DarkModeSwitch } from './DarkModeSwitch';
+import { useApolloClient } from '@apollo/client';
 
 export const NavBar = () => {
     const router = useRouter();
-    const [{fetching: logoutFetching}, logout] = useLogoutMutation(); // "{fetching: logoutFetching}" is to resolve the name conflict.
-    const [{data, fetching}] = useMeQuery({
-        pause: isServer(),
-    }); // fetching is for loading
+    const [logout, { loading: logoutFetching }] = useLogoutMutation(); // "{loading: logoutFetching}" is to resolve the name conflict.
+    const apolloClient = useApolloClient();
+    const {data, loading} = useMeQuery({
+        skip: isServer(),
+    });
 
     let body = null;
 
-    if (fetching) {
+    if (loading) {
         // data is loading
         body = null;
     } else if (!data?.me) {
@@ -42,7 +45,8 @@ export const NavBar = () => {
                 <Button
                     onClick={async () => {
                         await logout();
-                        router.reload();
+                        await apolloClient.resetStore();
+                        //router.reload();
                     }} 
                     variant="link"
                     isLoading={logoutFetching} // this will disable the button while loading the logout
@@ -55,13 +59,14 @@ export const NavBar = () => {
 
     return (
         // Navbar 
-        <Flex zIndex={1} position='sticky' top={0} bg={'#1A365D'} p={4}>
+        <Flex zIndex={1} position='sticky' top={0} bg={'transparent'} backdropFilter="auto" backdropBlur="3px" p={4} boxShadow='xl'>
             <Flex flex={1} m="auto" align="center" maxW={800}>
                 <NextLink href="/">
                     <Link>
-                        <Heading>post-app</Heading>
+                        <Heading>Bulletin board</Heading>
                     </Link>
                 </NextLink>
+                <Box><DarkModeSwitch /></Box>
                 <Box ml={'auto'}>{ body }</Box>
             </Flex>
         </Flex>

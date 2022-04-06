@@ -222,6 +222,34 @@ export class PostResolver {
 
     }
 
+    @Query(() => PaginatedPosts) 
+    async topPosts(
+        @Arg('limit', () => Int) limit: number
+    ): Promise<PaginatedPosts> {
+        // Sets the limit cap to 50. 
+        const realLimit = Math.min(50, limit); 
+        // Plus one extra post to check if hasMore posts is true.
+        const realLimitPlusOne = realLimit + 1;
+       
+        // query the top voted posts in desc order
+        const qb = getConnection()
+            .getRepository(Post)
+            .createQueryBuilder('p')
+            .where('p.points > 0')
+            .orderBy('p.points', 'DESC')
+            .take(realLimitPlusOne);
+
+        const topPosts = await qb.getMany();
+        
+        return {
+            posts: topPosts.slice(0, realLimit),
+            hasMore: topPosts.length === realLimitPlusOne
+        }
+
+        // push the apollo version to the new branch and merge to the master
+        // clean up commented out code. the commented out code is still on urql branch
+    }
+
     @Query(() => Post, { nullable: true })
     post(
         @Arg('id', () => Int) id: number
@@ -290,10 +318,21 @@ export class PostResolver {
             return false;
         }
 
-        if (post.creatorId !== req.session.userId) {
-            throw new Error("user is not authorized to delete this post");
-        }
+        const user = await User.findOne(req.session.userId);
+        
+        // admin delete
+        if (user.username === 'admin') {
+            console.log('admin delete');
+            await Upvote.delete({postId: id}); // delete the upvotes for this post
+            await Post.delete({ id }); // delete post
+            return true;
+        } 
 
+        if (post.creatorId !== req.session.userId) {
+            console.log('user not allow to delete post')
+            throw new Error("user is not authorized to delete this post");
+        } 
+        
         await Upvote.delete({postId: id}); // delete the upvotes for this post
         await Post.delete({ id }); // delete post
 

@@ -8,11 +8,12 @@ import { Layout } from "../components/Layout";
 import { useCreatePostMutation, useMeQuery } from "../generated/graphql";
 import { createUrqlClient } from "../utils/createUrqlClient";
 import { useIsAuth } from "../utils/useIsAuth";
+import { withApollo } from "../utils/withApollo";
 
 const CreatePost = () => {
     const router = useRouter();
     useIsAuth();
-    const [, createPost] = useCreatePostMutation(); 
+    const [createPost] = useCreatePostMutation(); 
 
     return(
         <Layout variant='small'>
@@ -22,8 +23,13 @@ const CreatePost = () => {
                     
                     // TO DO : validate the values. Check for empty strings
 
-                    const response = await createPost({input: values});
-                    if (!response.error) {
+                    const response = await createPost({ 
+                        variables: { input: values },
+                        update: (cache) => {
+                            cache.evict({ fieldName: "posts:{}" });
+                        }
+                    });
+                    if (!response.errors) {
                         router.push('/');
                     }
 
@@ -60,4 +66,4 @@ const CreatePost = () => {
     );
 }
 
-export default withUrqlClient(createUrqlClient)(CreatePost);
+export default withApollo({ ssr: false })(CreatePost);

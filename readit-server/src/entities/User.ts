@@ -42,4 +42,10 @@ export class User extends BaseEntity {
     @Field(() => String)
     @UpdateDateColumn()
     updatedAt: Date;
+
+
+
+    // @OneToMany(() => Comment, comment => comment.creator)
+    // comments: Comment[];
+
 }
