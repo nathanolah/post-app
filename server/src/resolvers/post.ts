@@ -121,27 +121,6 @@ export class PostResolver {
             });
         }
         
-        // insert new vote
-        // await Upvote.insert({
-        //     userId,
-        //     postId,
-        //     value: realValue,
-        // });
-
-        // insert and update post in the transaction
-        // await getConnection().query(`
-        //     START TRANSACTION;
-
-        //     insert into upvote ("userId", "postId", value)
-        //     values (${userId}, ${postId}, ${value});
-
-        //     update post
-        //     set points = points + ${realValue}
-        //     where id = ${postId};
-
-        //     COMMIT;
-        // `);
-
         return true;
     }
 
@@ -155,18 +134,10 @@ export class PostResolver {
         const realLimit = Math.min(50, limit); 
         // Plus one extra post to check if hasMore posts is true.
         const realLimitPlusOne = realLimit + 1;
-
         const replacements: any[] = [realLimitPlusOne];
 
-        // if (req.session.userId) {
-        //     replacements.push(req.session.userId);
-        // }
-
-        // cursorIdx will toggle to prevent the error of bind message suppling different parameters.
-        //let cursorIdx = 3;
         if (cursor) {
             replacements.push(new Date(parseInt(cursor)));
-            //cursorIdx = replacements.length;
         }
 
         const posts = await getConnection().query(`
@@ -177,44 +148,6 @@ export class PostResolver {
             limit $1
         `, replacements);
 
-        
-        // "voteStatus" refers to the currents users vote status for each post in the list.
-        // const posts = await getConnection().query(`
-        //     select p.*,
-        //     json_build_object(
-        //         'id', u.id,
-        //         'username', u.username,
-        //         'email', u.email,
-        //         'createdAt', u."createdAt",
-        //         'updatedAt', u."updatedAt"
-        //     ) creator,
-        //     ${req.session.userId 
-        //         ? '(select value from upvote where "userId" = $2 and "postId" = p.id) "voteStatus"' 
-        //         : 'null as "voteStatus"'
-        //     }
-        //     from post p
-        //     inner join public.user u on u.id = p."creatorId"
-        //     ${cursor ? `where p."createdAt" < $${cursorIdx}` : ""}
-        //     order by p."createdAt" DESC
-        //     limit $1
-        // `, replacements);
-
-        // console.log("POSTS : ", posts)
-
-        // const qb = getConnection()
-        //     .getRepository(Post)
-        //     .createQueryBuilder("p") // "p" is the alias
-        //     .innerJoinAndSelect("p.creator", "u", 'u.id = p."creatorId"')
-        //     .orderBy('p."createdAt"', "DESC") 
-        //     .take(realLimitPlusOne)
-        
-        // if (cursor) {
-        //     qb.where('p."createdAt" < :cursor', { cursor: new Date(parseInt(cursor)) }) 
-        // }
-    
-        //const posts = await qb.getMany();
-        //console.log(posts)
-
         return {
             posts: posts.slice(0, realLimit), // slice the posts to only provide the 'limit' amount of posts
             hasMore: posts.length === realLimitPlusOne, // checks if there are more posts
@@ -224,7 +157,7 @@ export class PostResolver {
 
     @Query(() => PaginatedPosts) 
     async topPosts(
-        @Arg('limit', () => Int) limit: number
+        @Arg('limit', () => Int) limit: number,
     ): Promise<PaginatedPosts> {
         // Sets the limit cap to 50. 
         const realLimit = Math.min(50, limit); 
@@ -239,15 +172,12 @@ export class PostResolver {
             .orderBy('p.points', 'DESC')
             .take(realLimitPlusOne);
 
-        const topPosts = await qb.getMany();
+       const topPosts = await qb.getMany();
         
         return {
             posts: topPosts.slice(0, realLimit),
             hasMore: topPosts.length === realLimitPlusOne
         }
-
-        // push the apollo version to the new branch and merge to the master
-        // clean up commented out code. the commented out code is still on urql branch
     }
 
     @Query(() => Post, { nullable: true })

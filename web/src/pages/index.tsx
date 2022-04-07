@@ -12,7 +12,7 @@
 // import { Container } from '../components/Container'
 // import { Main } from '../components/Main'
 // import { DarkModeSwitch } from '../components/DarkModeSwitch'
-// import { CTA } from '../components/CTA'
+// import { CTA } from '../components/CTA'  
 // import { Footer } from '../components/Footer'
 import { Box, Button, Flex, Heading, Link, Stack, Text, Spinner } from '@chakra-ui/react';
 import { withUrqlClient } from 'next-urql';
@@ -26,11 +26,6 @@ import { EditDeletePostButtons } from '../components/EditDeletePostButtons';
 import { withApollo } from '../utils/withApollo';
 
 const Index = () => {
-  // const [variables, setVariables] = useState({ 
-  //   limit: 15, 
-  //   cursor: null as null | string
-  // });
-
   const { data, error, loading, fetchMore, variables } = usePostsQuery({
     variables: {
       limit: 15, 
@@ -63,7 +58,7 @@ const Index = () => {
                 <Box flex={1}>
                   {/* Link will make the header clickable and NextLink will allow user to navigate to the post details. */}
                   <NextLink href="/post/[id]" as={`/post/${p.id}`}>
-                    <Link>
+                    <Link _hover={{ color:"gray.400" }} style={{ textDecoration: 'none' }}>
                       <Heading fontSize="xl">{p.title}</Heading>
                     </Link>
                   </NextLink>
@@ -73,13 +68,10 @@ const Index = () => {
                     <EditDeletePostButtons id={p.id} creatorId={p.creator.id} />
                   </Flex>
                 </Box>
-                {/* { p.textSnippet.length > 50 ? <Text mt={4}>{p.textSnippet.slice(0, 50)}...</Text> : <Text mt={4}>{p.textSnippet}</Text> } */}
               </Flex>
             )
           )}
         </Stack>
-
-        //data.posts.map((p) => (<div key={p.id}>{p.title}</div>)) 
        )}
 
        {data && data.posts.hasMore ? (
@@ -91,30 +83,7 @@ const Index = () => {
                   limit: variables?.limit,
                   cursor: data.posts.posts[data.posts.posts.length - 1].createdAt,
                 },
-                // updateQuery: (previousValue, { fetchMoreResult }): PostsQuery => {
-                //   if (!fetchMoreResult) {
-                //     return previousValue as PostsQuery;
-                //   }
-
-                //   return {
-                //     __typename: "Query",
-                //     posts: {
-                //       __typename: "PaginatedPosts",
-                //       hasMore: (fetchMoreResult as PostsQuery).posts.hasMore,
-                //       posts: [
-                //         ...(previousValue as PostsQuery).posts.posts,
-                //         ...(fetchMoreResult as PostsQuery).posts.posts,
-                //       ],
-                //     },
-                //   };
-
-                // },
-
               });
-              // setVariables({
-              //   limit: variables.limit,
-              //   cursor: data.posts.posts[data.posts.posts.length - 1].createdAt,
-              // })
             }} 
             isLoading={loading}
             m='auto' 
@@ -166,4 +135,4 @@ const Index = () => {
 
 }
 
-export default withApollo({ ssr: true })(Index); // this wraps the urql provider around Index to use graphql. We also use SSR for the query.
+export default withApollo({ ssr: true })(Index); // this wraps the apollo provider around Index to use graphql. We also use SSR for the query.

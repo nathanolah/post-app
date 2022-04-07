@@ -6,6 +6,7 @@ import { isServer } from '../utils/isServer';
 import { useRouter } from 'next/router';
 import { DarkModeSwitch } from './DarkModeSwitch';
 import { useApolloClient } from '@apollo/client';
+import { ColorModeSwitcher } from './ColorModeSwitcher';
 
 export const NavBar = () => {
     const router = useRouter();
@@ -25,10 +26,10 @@ export const NavBar = () => {
         body = (
             <>
                 <NextLink href="/login">
-                    <Link mr={2}>Login</Link>
+                    <Link mr={2} _hover={{ color:"#58a6ff" }} style={{ textDecoration: 'none' }}>Login</Link>
                 </NextLink>
                 <NextLink href="/register">
-                    <Link mr={2}>Register</Link>
+                    <Link mr={2} _hover={{ color:"#58a6ff" }} style={{ textDecoration: 'none' }}>Register</Link>
                 </NextLink>
             </>
         )
@@ -50,6 +51,8 @@ export const NavBar = () => {
                     }} 
                     variant="link"
                     isLoading={logoutFetching} // this will disable the button while loading the logout
+                    _hover={{ color:"#58a6ff" }}
+                    style={{ textDecoration: 'none' }}
                 >
                     Logout
                 </Button>
@@ -62,12 +65,19 @@ export const NavBar = () => {
         <Flex zIndex={1} position='sticky' top={0} bg={'transparent'} backdropFilter="auto" backdropBlur="3px" p={4} boxShadow='xl'>
             <Flex flex={1} m="auto" align="center" maxW={800}>
                 <NextLink href="/">
-                    <Link>
-                        <Heading>Bulletin board</Heading>
+                    <Link _hover={{ color:"#58a6ff" }} style={{ textDecoration: 'none' }}>
+                        <Heading as='h4'>Bulletin board</Heading>
                     </Link>
                 </NextLink>
-                <Box><DarkModeSwitch /></Box>
+                <Box ml={6}>
+                    <NextLink href="/top-posts">
+                        <Link _hover={{ color:"#58a6ff" }} style={{ textDecoration: 'none' }}>
+                        <Heading as='h5' size='sm'>Top Posts</Heading>
+                        </Link>
+                    </NextLink>
+                </Box>
                 <Box ml={'auto'}>{ body }</Box>
+                <Box><ColorModeSwitcher /></Box>
             </Flex>
         </Flex>
     );

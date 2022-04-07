@@ -7,11 +7,6 @@ import { buildSchema } from 'type-graphql';
 import { HelloResolver } from './resolvers/hello';
 import { PostResolver } from './resolvers/post'; 
 import { UserResolver } from "./resolvers/user";
-
-//import { MikroORM } from '@mikro-orm/core';
-//import config from './mikro-orm.config';
-//import * as redis from 'redis';
-
 import path from 'path'
 import Redis from 'ioredis';
 import session from 'express-session'; 
@@ -27,7 +22,7 @@ import { createUpvoteLoader } from "./utils/createUpvoteLoader";
 
 const main = async() => {
 
-    const conn = await createConnection({
+    await createConnection({
         type: 'postgres',
         url: process.env.DATABASE_URL,
         logging: true,
@@ -40,13 +35,6 @@ const main = async() => {
 
     //await Post.delete({});
 
-    /** MikroORM configuration **
-    ////console.log(path.join(__dirname ,'./migrations'));
-    //const orm = await MikroORM.init(config); 
-    ////await orm.em.nativeDelete(User, {}) // AFTER MIGRATING THE EMAIL TO THE SCHEMA THE OLD USERS NEED TO BE DELETED
-    //await orm.getMigrator().up();
-    */
-
     // Express server
     const app = express();
 
@@ -58,8 +46,6 @@ const main = async() => {
     );
 
     const RedisStore = connectRedis(session);
-    // const redisClient = redis.createClient({ legacyMode: true });
-    // redisClient.connect().catch(console.error);
     const redis = new Redis(process.env.REDIS_URL);
 
     // This will allow the cookies to work in a proxy environment
@@ -116,7 +102,7 @@ const main = async() => {
     });
 
     app.listen(parseInt(process.env.PORT), () => {
-        console.log('server is running on port localhost:4000');
+        console.log(`server is running on port localhost:${ process.env.PORT }`);
     })
 
 }

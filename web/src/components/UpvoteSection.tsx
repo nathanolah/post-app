@@ -1,6 +1,6 @@
 import { ApolloCache } from "@apollo/client";
 import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
-import { Flex, IconButton } from "@chakra-ui/react";
+import { Flex, IconButton, Text } from "@chakra-ui/react";
 import React, { useState } from "react";
 import { PostSnippetFragment, useMeQuery, useVoteMutation, VoteMutation } from "../generated/graphql";
 import gql from "graphql-tag";
@@ -58,12 +58,18 @@ export const UpvoteSection: React.FC<UpvoteSectionProps> = ({ post }) => {
         skip: isServer(),
     });
 
+    let color = "";
+    if (post.points > 0) {
+        color = '#089981'; // green
+    } else if (post.points < 0) {
+        color = '#f23645'; // red
+    }
+
     return (
         <Flex direction="column" justifyContent="center" alignItems="center" mr={4}>
             <IconButton
                 onClick={async () => {
-                    // console.log("post : ", post.voteStatus)
-
+                    
                     if (!data?.me) {
                         console.log('not logged in account')
                         Router.replace('/login');
@@ -81,14 +87,16 @@ export const UpvoteSection: React.FC<UpvoteSectionProps> = ({ post }) => {
                         });
                         setLoadingState("not-loading"); // set back to not loading
                     }
-                    
+
                 }}
                 colorScheme={post.voteStatus === 1 ? "green" : undefined}
                 isLoading={loadingState === "upvote-loading"} 
                 aria-label="Up vote post" 
                 icon={<ChevronUpIcon boxSize="24px"/>}
             />
-            {post.points}
+            <Text color={color} fontSize="md" fontWeight='bold'>
+                {post.points}
+            </Text>
             <IconButton
                 onClick={async () => {
 

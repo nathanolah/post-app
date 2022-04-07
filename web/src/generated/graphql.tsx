@@ -111,6 +111,7 @@ export type Query = {
   me?: Maybe<User>;
   post?: Maybe<Post>;
   posts: PaginatedPosts;
+  topPosts: PaginatedPosts;
 };
 
 
@@ -121,6 +122,11 @@ export type QueryPostArgs = {
 
 export type QueryPostsArgs = {
   cursor?: InputMaybe<Scalars['String']>;
+  limit: Scalars['Int'];
+};
+
+
+export type QueryTopPostsArgs = {
   limit: Scalars['Int'];
 };
 
@@ -238,6 +244,13 @@ export type PostsQueryVariables = Exact<{
 
 
 export type PostsQuery = { __typename?: 'Query', posts: { __typename?: 'PaginatedPosts', hasMore: boolean, posts: Array<{ __typename?: 'Post', id: number, createdAt: string, updatedAt: string, title: string, points: number, textSnippet: string, voteStatus?: number | null, creator: { __typename?: 'User', id: number, username: string } }> } };
+
+export type TopPostsQueryVariables = Exact<{
+  limit: Scalars['Int'];
+}>;
+
+
+export type TopPostsQuery = { __typename?: 'Query', topPosts: { __typename?: 'PaginatedPosts', hasMore: boolean, posts: Array<{ __typename?: 'Post', id: number, createdAt: string, updatedAt: string, title: string, points: number, textSnippet: string, voteStatus?: number | null, creator: { __typename?: 'User', id: number, username: string } }> } };
 
 export const PostSnippetFragmentDoc = gql`
     fragment PostSnippet on Post {
@@ -697,3 +710,41 @@ export function usePostsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<Post
 export type PostsQueryHookResult = ReturnType<typeof usePostsQuery>;
 export type PostsLazyQueryHookResult = ReturnType<typeof usePostsLazyQuery>;
 export type PostsQueryResult = Apollo.QueryResult<PostsQuery, PostsQueryVariables>;
+export const TopPostsDocument = gql`
+    query TopPosts($limit: Int!) {
+  topPosts(limit: $limit) {
+    hasMore
+    posts {
+      ...PostSnippet
+    }
+  }
+}
+    ${PostSnippetFragmentDoc}`;
+
+/**
+ * __useTopPostsQuery__
+ *
+ * To run a query within a React component, call `useTopPostsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTopPostsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTopPostsQuery({
+ *   variables: {
+ *      limit: // value for 'limit'
+ *   },
+ * });
+ */
+export function useTopPostsQuery(baseOptions: Apollo.QueryHookOptions<TopPostsQuery, TopPostsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<TopPostsQuery, TopPostsQueryVariables>(TopPostsDocument, options);
+      }
+export function useTopPostsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<TopPostsQuery, TopPostsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<TopPostsQuery, TopPostsQueryVariables>(TopPostsDocument, options);
+        }
+export type TopPostsQueryHookResult = ReturnType<typeof useTopPostsQuery>;
+export type TopPostsLazyQueryHookResult = ReturnType<typeof useTopPostsLazyQuery>;
+export type TopPostsQueryResult = Apollo.QueryResult<TopPostsQuery, TopPostsQueryVariables>;
