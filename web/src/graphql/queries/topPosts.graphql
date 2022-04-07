@@ -1,0 +1,8 @@
+query TopPosts($limit: Int!) {
+    topPosts(limit: $limit) {
+        hasMore
+        posts {
+            ...PostSnippet
+        }
+    }
+}
