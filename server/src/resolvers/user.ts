@@ -1,19 +1,29 @@
-import { Query, Resolver, Mutation, Arg, Field, Ctx, ObjectType, FieldResolver, Root } from "type-graphql";
-import argon2 from 'argon2';
+import {
+    Query,
+    Resolver,
+    Mutation,
+    Arg,
+    Field,
+    Ctx,
+    ObjectType,
+    FieldResolver,
+    Root,
+} from "type-graphql";
+import argon2 from "argon2";
 import { COOKIE_NAME, FORGET_PASSWORD_PREFIX } from "../constants";
 import { UsernamePasswordInput } from "./UsernamePasswordInput";
 import { validateRegister } from "../utils/validateRegister";
 import { sendEmail } from "../utils/sendEmail";
-import { v4 } from 'uuid';
+import { v4 } from "uuid";
 import { MyContext } from "../types";
 import { User } from "../entities/User";
 import { getConnection } from "typeorm";
- 
+
 @ObjectType()
 class FieldError {
     @Field()
     field: string;
-    
+
     @Field()
     message: string;
 }
@@ -30,15 +40,11 @@ class UserResponse {
 
 @Resolver(User)
 export class UserResolver {
-
     @FieldResolver(() => String)
-    email(
-        @Root() user: User,
-        @Ctx() { req }: MyContext
-    ) {
-        // check if this is the current user that is currently logged in 
+    email(@Root() user: User, @Ctx() { req }: MyContext) {
+        // check if this is the current user that is currently logged in
         if (req.session.userId === user.id) {
-            return user.email // show the user their email
+            return user.email; // show the user their email
         }
 
         // user wants to view someone elses email
@@ -47,17 +53,17 @@ export class UserResolver {
 
     @Mutation(() => UserResponse)
     async changePassword(
-        @Arg('token') token: string,
-        @Arg('newPassword') newPassword: string, 
+        @Arg("token") token: string,
+        @Arg("newPassword") newPassword: string,
         @Ctx() { redis, req }: MyContext
     ): Promise<UserResponse> {
         // validate new password
         if (newPassword.length <= 2) {
-            return { 
+            return {
                 errors: [
                     {
                         field: "newPassword",
-                        message: "length must be greater than 2"
+                        message: "length must be greater than 2",
                     },
                 ],
             };
@@ -71,9 +77,9 @@ export class UserResolver {
                 errors: [
                     {
                         field: "token",
-                        message: "token expired" 
+                        message: "token expired",
                     },
-                ], 
+                ],
             };
         }
 
@@ -89,7 +95,7 @@ export class UserResolver {
                 ],
             };
         }
-        
+
         await User.update(
             { id: userIdNum },
             { password: await argon2.hash(newPassword) } // hash new password
@@ -105,7 +111,7 @@ export class UserResolver {
 
     @Mutation(() => Boolean)
     async forgotPassword(
-        @Arg('email') email: string,
+        @Arg("email") email: string,
         @Ctx() { redis }: MyContext
     ) {
         const user = await User.findOne({ where: { email } }); // since email is not a primary column we have to search with 'where'.
@@ -119,9 +125,9 @@ export class UserResolver {
         await redis.set(
             FORGET_PASSWORD_PREFIX + token, // key
             user.id, // value
-            'ex', // expiry mode
+            "ex", // expiry mode
             1000 * 60 * 60 * 24 * 3 // 3 days till expired
-        ); 
+        );
 
         await sendEmail(
             email,
@@ -132,20 +138,18 @@ export class UserResolver {
     }
 
     @Query(() => User, { nullable: true })
-    async me(
-        @Ctx() { req }: MyContext
-    ) {
+    async me(@Ctx() { req }: MyContext) {
         if (!req.session.userId) {
             return null;
         }
-        
+
         return await User.findOne(req.session.userId);
-    } 
+    }
 
     @Mutation(() => UserResponse)
     async register(
-        @Arg('options') options: UsernamePasswordInput,
-        @Ctx() { req }: MyContext 
+        @Arg("options") options: UsernamePasswordInput,
+        @Ctx() { req }: MyContext
     ): Promise<UserResponse> {
         const errors = validateRegister(options);
         if (errors) {
@@ -160,31 +164,32 @@ export class UserResolver {
             //     email: options.email,
             //     password: hashedPassword
             // }).save();
-            
+
             const result = await getConnection()
                 .createQueryBuilder()
                 .insert()
                 .into(User)
                 .values({
-                        username: options.username,
-                        email: options.email,
-                        password: hashedPassword
+                    username: options.username,
+                    email: options.email,
+                    password: hashedPassword,
                 })
                 .returning("*")
                 .execute();
-            
+
             user = result.raw[0];
         } catch (err) {
-
-            if (err.code === '23505') {
+            if (err.code === "23505") {
                 return {
-                    errors: [{
-                        field: 'username',
-                        message: "username has already been taken",
-                    }]
-                }
+                    errors: [
+                        {
+                            field: "username",
+                            message: "username has already been taken",
+                        },
+                    ],
+                };
             } else {
-                console.log('message: ', err.message);
+                console.log("message: ", err.message);
             }
         }
 
@@ -197,33 +202,37 @@ export class UserResolver {
 
     @Mutation(() => UserResponse)
     async login(
-        @Arg('usernameOrEmail') usernameOrEmail: string,
-        @Arg('password') password: string,
-        @Ctx() { req }: MyContext 
+        @Arg("usernameOrEmail") usernameOrEmail: string,
+        @Arg("password") password: string,
+        @Ctx() { req }: MyContext
     ): Promise<UserResponse> {
         // Find the user with either an email or username
         const user = await User.findOne(
-            usernameOrEmail.includes('@') 
+            usernameOrEmail.includes("@")
                 ? { where: { email: usernameOrEmail } }
-                : { where: { username: usernameOrEmail } }  
+                : { where: { username: usernameOrEmail } }
         );
-        
+
         if (!user) {
             return {
-                errors: [{
-                field: 'usernameOrEmail',
-                message: "username doesn't exist",
-                }] 
+                errors: [
+                    {
+                        field: "usernameOrEmail",
+                        message: "username doesn't exist",
+                    },
+                ],
             };
         }
 
         const valid = await argon2.verify(user.password, password);
         if (!valid) {
             return {
-                errors: [{
-                    field: 'password',
-                    message: "incorrect password",
-                }]
+                errors: [
+                    {
+                        field: "password",
+                        message: "incorrect password",
+                    },
+                ],
             };
         }
 
@@ -236,23 +245,20 @@ export class UserResolver {
             user,
         };
     }
-   
+
     @Mutation(() => Boolean)
-    logout(
-        @Ctx() { req, res }: MyContext
-    ) {
-        return new Promise(resolve => 
-            req.session.destroy(err => {
+    logout(@Ctx() { req, res }: MyContext) {
+        return new Promise((resolve) =>
+            req.session.destroy((err) => {
                 res.clearCookie(COOKIE_NAME);
                 if (err) {
                     console.log(err);
                     resolve(false);
-                    return; 
+                    return;
                 }
 
                 resolve(true);
             })
         );
     }
-
 }

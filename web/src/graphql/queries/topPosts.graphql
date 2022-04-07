@@ -1,5 +1,5 @@
-query TopPosts($limit: Int!) {
-    topPosts(limit: $limit) {
+query TopPosts($limit: Int!, $cursor: String) {
+    topPosts(limit: $limit, cursor: $cursor) {
         hasMore
         posts {
             ...PostSnippet

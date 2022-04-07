@@ -48,6 +48,15 @@ const createClient = (ctx?: NextPageContext) => new ApolloClient({
                 };
               },
             },
+            topPosts: { // topPosts query from graphql
+              keyArgs: [],
+              merge(existing: PaginatedPosts | undefined, incoming: PaginatedPosts): PaginatedPosts {
+                return {
+                  ...incoming,
+                  posts: [...(existing?.posts || []), ...incoming.posts]
+                }
+              }
+            }
           },
         },
       }, 

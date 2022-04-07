@@ -127,6 +127,7 @@ export type QueryPostsArgs = {
 
 
 export type QueryTopPostsArgs = {
+  cursor?: InputMaybe<Scalars['String']>;
   limit: Scalars['Int'];
 };
 
@@ -247,6 +248,7 @@ export type PostsQuery = { __typename?: 'Query', posts: { __typename?: 'Paginate
 
 export type TopPostsQueryVariables = Exact<{
   limit: Scalars['Int'];
+  cursor?: InputMaybe<Scalars['String']>;
 }>;
 
 
@@ -711,8 +713,8 @@ export type PostsQueryHookResult = ReturnType<typeof usePostsQuery>;
 export type PostsLazyQueryHookResult = ReturnType<typeof usePostsLazyQuery>;
 export type PostsQueryResult = Apollo.QueryResult<PostsQuery, PostsQueryVariables>;
 export const TopPostsDocument = gql`
-    query TopPosts($limit: Int!) {
-  topPosts(limit: $limit) {
+    query TopPosts($limit: Int!, $cursor: String) {
+  topPosts(limit: $limit, cursor: $cursor) {
     hasMore
     posts {
       ...PostSnippet
@@ -734,6 +736,7 @@ export const TopPostsDocument = gql`
  * const { data, loading, error } = useTopPostsQuery({
  *   variables: {
  *      limit: // value for 'limit'
+ *      cursor: // value for 'cursor'
  *   },
  * });
  */

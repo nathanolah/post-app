@@ -4,12 +4,11 @@ import { Query, Resolver } from "type-graphql";
 export class HelloResolver {
     @Query(() => String) // uppercase 'String' in type-graphql
     hello() {
-        return 'hello world';
+        return "hello world";
     }
 
     @Query(() => String)
     bye() {
-        return 'bye';
+        return "bye";
     }
-
 }

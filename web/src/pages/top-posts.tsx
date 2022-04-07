@@ -5,14 +5,15 @@ import { UpvoteSection } from '../components/UpvoteSection';
 import { useTopPostsQuery } from '../generated/graphql';
 import { withApollo } from '../utils/withApollo';
 import NextLink from 'next/link';
-import { useState } from 'react';
+
+// TO DO : need to add a cursor that will paginated to the next top posts after the last post without duplicate values
 
 const TopPosts = () => {
-    const [limitAmount, setLimitAmount] = useState(5);
-
+    
     const { data, error, loading, fetchMore, variables } = useTopPostsQuery({
         variables: {
-            limit: limitAmount
+            limit: 30,
+            cursor: null, 
         },
         notifyOnNetworkStatusChange: true
     });
@@ -63,11 +64,10 @@ const TopPosts = () => {
                         onClick={() => {
                             fetchMore({
                                 variables: {
-                                    limit: variables?.limit
+                                    limit: variables?.limit,
+                                    cursor: null
                                 }
                             })
-                            let amount = limitAmount
-                            setLimitAmount(amount += 5);
                         }}
                         isLoading={loading}
                         m='auto'
